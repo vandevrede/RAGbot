@@ -5,3 +5,4 @@ langchain-community
 pypdf
 python-docx
 pinecone
+langchain-pinecone
