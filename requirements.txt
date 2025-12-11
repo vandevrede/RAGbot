@@ -1,8 +1,8 @@
 streamlit
 langchain==0.3.0
 langchain-openai
+langchain-pinecone
 langchain-community
+pinecone
 pypdf
 python-docx
-pinecone
-langchain-pinecone
