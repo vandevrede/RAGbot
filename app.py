@@ -2,7 +2,7 @@ import os
 import streamlit as st
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.document_loaders import UnstructuredFileLoader
-from langchain.text_splitters import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 
 # IMPORTANT: Replace with your actual OpenAI API key
@@ -62,3 +62,4 @@ if user_input:
     st.markdown("### AI Response")
 
     st.write(response.content)
+
