@@ -5,10 +5,18 @@ from langchain_community.document_loaders import TextLoader, PyPDFLoader, Unstru
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 
+uploaded_files = st.sidebar.file_uploader(
+    "Upload documents", type=["txt", "pdf", "docx"], accept_multiple_files=True
+)
+
 docs = []
-docs.extend(TextLoader("doc1.txt").load())
-docs.extend(PyPDFLoader("doc2.pdf").load())
-docs.extend(UnstructuredWordDocumentLoader("doc3.docx").load())
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        with open(uploaded_file.name, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        loader = TextLoader(uploaded_file.name)
+        docs.extend(loader.load())
+
 
 
 # IMPORTANT: Replace with your actual OpenAI API key
@@ -68,6 +76,7 @@ if user_input:
     st.markdown("### AI Response")
 
     st.write(response.content)
+
 
 
 
