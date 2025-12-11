@@ -5,4 +5,6 @@ langchain-community
 chromadb
 unstructured[all-docs]
 unstructured-inference
+onnxruntime
 opencv-python-headless
+ml-dtypes
