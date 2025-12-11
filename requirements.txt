@@ -3,8 +3,5 @@ langchain==0.3.0
 langchain-openai
 langchain-community
 chromadb
-unstructured[all-docs]
-unstructured-inference
-onnxruntime
-opencv-python-headless
-ml-dtypes
+pypdf
+python-docx
