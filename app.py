@@ -4,10 +4,10 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.document_loaders import TextLoader, PyPDFLoader, UnstructuredWordDocumentLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Pinecone
-from pinecone import Pinecone, ServerlessSpec
+from pinecone import Pinecone as PineconeClient, ServerlessSpec
 
 # --- Pinecone setup ---
-pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
+pc = PineconeClient(api_key=os.environ.get("PINECONE_API_KEY"))
 index_name = "ragbot-index"
 
 # Create index if it doesn't exist
@@ -19,9 +19,6 @@ if index_name not in pc.list_indexes().names():
         spec=ServerlessSpec(cloud="aws", region="us-east-1")
     )
 
-# Connect to the index
-index = pc.Index(index_name)
-
 # --- LLM setup ---
 llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
 
@@ -32,6 +29,8 @@ uploaded_files = st.sidebar.file_uploader(
 )
 
 all_docs = []
+embeddings = OpenAIEmbeddings()
+
 if uploaded_files:
     for uploaded_file in uploaded_files:
         # Save uploaded file temporarily
@@ -57,14 +56,13 @@ if uploaded_files:
     split_docs = text_splitter.split_documents(all_docs)
 
     # Create embeddings and store in Pinecone
-    embeddings = OpenAIEmbeddings()
     vectorstore = Pinecone.from_documents(split_docs, embeddings, index_name=index_name)
     st.sidebar.success("Documents uploaded and indexed!")
 
 else:
     # Connect to existing Pinecone index
-    embeddings = OpenAIEmbeddings()
-    vectorstore = Pinecone.from_existing_index(index_name, embeddings)
+    index = pc.Index(index_name)
+    vectorstore = Pinecone(index, embeddings.embed_query, "text")
 
 # --- Retrieval function ---
 def retrieve_context(query, k=3):
