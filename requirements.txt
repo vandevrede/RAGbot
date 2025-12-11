@@ -4,4 +4,5 @@ langchain-openai
 langchain-community
 chromadb
 unstructured[all-docs]
-unstructured[pdf]
+unstructured-inference
+opencv-python-headless
