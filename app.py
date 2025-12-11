@@ -1,9 +1,15 @@
 import os
 import streamlit as st
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.document_loaders import UnstructuredFileLoader
+from langchain_community.document_loaders import TextLoader, PyPDFLoader, UnstructuredWordDocumentLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
+
+docs = []
+docs.extend(TextLoader("doc1.txt").load())
+docs.extend(PyPDFLoader("doc2.pdf").load())
+docs.extend(UnstructuredWordDocumentLoader("doc3.docx").load())
+
 
 # IMPORTANT: Replace with your actual OpenAI API key
 api_key = os.environ.get("OPEN_API_KEY")
@@ -62,5 +68,6 @@ if user_input:
     st.markdown("### AI Response")
 
     st.write(response.content)
+
 
 
