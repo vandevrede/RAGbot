@@ -61,8 +61,7 @@ if uploaded_files:
 
 else:
     # Connect to existing Pinecone index
-    index = pc.Index(index_name)
-    vectorstore = Pinecone(index, embeddings.embed_query, "text")
+    vectorstore = Pinecone.from_existing_index(index_name, embeddings)
 
 # --- Retrieval function ---
 def retrieve_context(query, k=3):
