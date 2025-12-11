@@ -5,24 +5,7 @@ from langchain_community.document_loaders import TextLoader, PyPDFLoader, Unstru
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 
-uploaded_files = st.sidebar.file_uploader(
-    "Upload documents", type=["txt", "pdf", "docx"], accept_multiple_files=True
-)
-
-docs = []
-if uploaded_files:
-    for uploaded_file in uploaded_files:
-        with open(uploaded_file.name, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        loader = TextLoader(uploaded_file.name)
-        docs.extend(loader.load())
-
-
-
-# IMPORTANT: Replace with your actual OpenAI API key
-api_key = os.environ.get("OPEN_API_KEY")
-
-# Initialize the LLM
+# Initialize the LLM (reads OPENAI_API_KEY from environment/secrets)
 llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
 
 # Persistent directory for ChromaDB
@@ -30,15 +13,28 @@ persist_directory = "./chroma_db"
 
 # Sidebar for document upload
 st.sidebar.header("Upload Documents")
-uploaded_files = st.sidebar.file_uploader("Choose files", type=["txt", "pdf", "docx"], accept_multiple_files=True)
+uploaded_files = st.sidebar.file_uploader(
+    "Choose files", type=["txt", "pdf", "docx"], accept_multiple_files=True
+)
 
+all_docs = []
 if uploaded_files:
-    all_docs = []
-    for file in uploaded_files:
+    for uploaded_file in uploaded_files:
         # Save uploaded file temporarily
-        with open(file.name, "wb") as f:
-            f.write(file.getbuffer())
-        loader = UnstructuredFileLoader(file.name)
+        with open(uploaded_file.name, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        # Pick loader based on file type
+        if uploaded_file.name.endswith(".txt"):
+            loader = TextLoader(uploaded_file.name)
+        elif uploaded_file.name.endswith(".pdf"):
+            loader = PyPDFLoader(uploaded_file.name)
+        elif uploaded_file.name.endswith(".docx"):
+            loader = UnstructuredWordDocumentLoader(uploaded_file.name)
+        else:
+            st.warning(f"Unsupported file type: {uploaded_file.name}")
+            continue
+
         docs = loader.load()
         all_docs.extend(docs)
 
@@ -47,14 +43,14 @@ if uploaded_files:
     split_docs = text_splitter.split_documents(all_docs)
 
     # Create embeddings and store in persistent ChromaDB
-    embeddings = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
+    embeddings = OpenAIEmbeddings()
     vectorstore = Chroma.from_documents(split_docs, embeddings, persist_directory=persist_directory)
     vectorstore.persist()
     st.sidebar.success("Documents uploaded and indexed!")
 
 else:
     # Load existing persistent DB if no new files uploaded
-    embeddings = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
+    embeddings = OpenAIEmbeddings()
     vectorstore = Chroma(embedding_function=embeddings, persist_directory=persist_directory)
 
 # Retrieval function
@@ -74,9 +70,4 @@ if user_input:
     ]
     response = llm.invoke(messages)
     st.markdown("### AI Response")
-
     st.write(response.content)
-
-
-
-
