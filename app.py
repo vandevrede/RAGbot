@@ -9,7 +9,7 @@ from langchain_community.vectorstores import Chroma
 api_key = os.environ.get("OPEN_API_KEY")
 
 # Initialize the LLM
-llm = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=os.environ.get("OPENAI_API_KEY"))
+llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
 
 # Persistent directory for ChromaDB
 persist_directory = "./chroma_db"
@@ -62,4 +62,5 @@ if user_input:
     st.markdown("### AI Response")
 
     st.write(response.content)
+
 
