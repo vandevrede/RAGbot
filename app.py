@@ -3,15 +3,29 @@ import streamlit as st
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.document_loaders import TextLoader, PyPDFLoader, UnstructuredWordDocumentLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import Pinecone
+from pinecone import Pinecone, ServerlessSpec
 
-# Initialize the LLM (reads OPENAI_API_KEY from environment/secrets)
+# --- Pinecone setup ---
+pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
+index_name = "ragbot-index"
+
+# Create index if it doesn't exist
+if index_name not in pc.list_indexes().names():
+    pc.create_index(
+        name=index_name,
+        dimension=1536,          # matches OpenAI embeddings
+        metric="cosine",         # semantic similarity
+        spec=ServerlessSpec(cloud="aws", region="us-east-1")
+    )
+
+# Connect to the index
+index = pc.Index(index_name)
+
+# --- LLM setup ---
 llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
 
-# Persistent directory for ChromaDB
-persist_directory = "./chroma_db"
-
-# Sidebar for document upload
+# --- Sidebar for document upload ---
 st.sidebar.header("Upload Documents")
 uploaded_files = st.sidebar.file_uploader(
     "Choose files", type=["txt", "pdf", "docx"], accept_multiple_files=True
@@ -42,23 +56,22 @@ if uploaded_files:
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     split_docs = text_splitter.split_documents(all_docs)
 
-    # Create embeddings and store in persistent ChromaDB
+    # Create embeddings and store in Pinecone
     embeddings = OpenAIEmbeddings()
-    vectorstore = Chroma.from_documents(split_docs, embeddings, persist_directory=persist_directory)
-    vectorstore.persist()
+    vectorstore = Pinecone.from_documents(split_docs, embeddings, index_name=index_name)
     st.sidebar.success("Documents uploaded and indexed!")
 
 else:
-    # Load existing persistent DB if no new files uploaded
+    # Connect to existing Pinecone index
     embeddings = OpenAIEmbeddings()
-    vectorstore = Chroma(embedding_function=embeddings, persist_directory=persist_directory)
+    vectorstore = Pinecone.from_existing_index(index_name, embeddings)
 
-# Retrieval function
+# --- Retrieval function ---
 def retrieve_context(query, k=3):
     results = vectorstore.similarity_search(query, k=k)
     return "\n\n".join([doc.page_content for doc in results])
 
-# Main chat interface
+# --- Main chat interface ---
 st.title("📚 Multi‑Document RAG Chatbot")
 user_input = st.text_input("Ask a question:")
 
